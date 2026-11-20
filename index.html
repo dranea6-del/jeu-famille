@@ -237,6 +237,21 @@ canvas.foil{position:absolute;inset:0;width:100%;height:100%;touch-action:none;t
 .av.pris::after{content:attr(data-num);position:absolute;margin:-150px 0 0 140px;width:56px;height:56px;border-radius:50%;background:var(--or);color:var(--encre);font-size:34px;font-weight:900;display:flex;align-items:center;justify-content:center}
 .av{position:relative}
 .liste{margin:36px 0 10px;font-size:40px;min-height:60px}
+/* ---------- Défi famille sur téléphones ---------- */
+.choixMode.tel{background:#cfe3ff}
+#hote,#rejoindre{padding-top:70px;text-align:center}
+#hote h2,#rejoindre h2{font-size:72px;color:var(--or)}
+#hote .sub,#rejoindre .sub{font-size:38px;margin:16px 70px 30px;line-height:1.35}
+.qrDefi{width:640px;height:640px;background:#fff;border-radius:30px;padding:30px;margin:10px auto}
+.qrDefi svg{width:100%;height:100%}
+.codeDefi{font-size:90px;font-weight:900;letter-spacing:16px;color:var(--or);margin:10px 0}
+.etapesDefi{font-size:36px;line-height:1.5;text-align:left;width:900px;margin:20px auto;background:rgba(255,255,255,.07);border-radius:30px;padding:24px 40px}
+.alerteDefi{font-size:34px;background:var(--rouge);border-radius:24px;padding:24px 34px;margin:20px 60px;line-height:1.35}
+.defi .jauge,.defi #goodie,.defi #classement,.defi .compte,.defi #btnStop{display:none!important}
+.zone.verrou{pointer-events:none;background:rgba(20,33,61,.35)}
+.zone.verrou .badge{background:#9aa3b5;animation:none;font-size:30px}
+.carteScore{font-size:44px;font-weight:900;margin-top:30px;line-height:1.3}
+.carteScore .av{font-size:150px;display:block}
 /* ---------- Tour de jeu ---------- */
 .tour{display:none;margin-top:18px;align-items:center;gap:18px;background:var(--or);color:var(--encre);border-radius:999px;padding:10px 40px 10px 14px;font-size:40px;font-weight:900;box-shadow:0 8px 20px rgba(0,0,0,.35)}
 .tour .e{font-size:64px;width:84px;height:84px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
@@ -277,7 +292,25 @@ canvas.foil{position:absolute;inset:0;width:100%;height:100%;touch-action:none;t
 <section class="screen" id="mode">
   <h2>Comment jouez-vous ?</h2>
   <button class="choixMode eq" id="modeEq"><span class="ic">👥</span><div><b>En équipe</b><span>Vous répondez ensemble, un seul score pour l'équipe.</span></div></button>
+  <button class="choixMode tel" id="modeTel"><span class="ic">📱</span><div><b>Défi famille</b><span>Chacun sur son téléphone, même parcours pour tous, et on compare les scores à la fin.</span></div></button>
   <button class="choixMode fa" id="modeFa"><span class="ic">👨‍👩‍👧</span><div><b>En famille</b><span>Chacun son tour ! Un avatar et un score par joueur, et un champion de la famille.</span></div></button>
+</section>
+
+<section class="screen" id="hote">
+  <h2>📱 Défi famille</h2>
+  <div class="sub">Chacun joue sur son téléphone, avec le même parcours.</div>
+  <div id="hoteQr"></div>
+  <div class="codeDefi" id="hoteCode"></div>
+  <div class="etapesDefi">1. Chacun scanne le QR code avec son téléphone.<br>2. Chacun choisit son avatar et joue à son rythme.<br>3. À la fin, comparez vos cartes de score : le meilleur est le champion de la famille ! 👑</div>
+  <div class="eq-actions"><button class="btn alt petit" id="hoteNouveau">↺ Nouveau code</button><button class="btn" id="hoteJouer">Je joue aussi ➜</button></div>
+  <button class="btn alt petit" id="hoteRetour" style="margin-top:30px">← Retour</button>
+</section>
+
+<section class="screen" id="rejoindre">
+  <h2>📱 Défi famille</h2>
+  <div class="sub">Code du défi : <b id="rejCode" style="color:var(--or)"></b><br>Choisissez votre avatar pour commencer.</div>
+  <div class="avatars" id="avatarsDefi"></div>
+  <div class="eq-actions"><button class="btn" id="rejGo" disabled>C'est parti ➜</button></div>
 </section>
 
 <section class="screen" id="joueurs">
@@ -371,7 +404,7 @@ canvas.foil{position:absolute;inset:0;width:100%;height:100%;touch-action:none;t
     <div class="timbres" id="timbres"></div>
     <div class="bas">
       <div class="qr" id="qr"></div>
-      <div><div class="score">Score de l'équipe<em id="finScore">0</em></div>
+      <div><div class="score"><span id="finScoreLbl">Score de l'équipe</span><em id="finScore">0</em></div>
       <div class="flash">📱 Flashez le code pour aller plus loin.</div></div>
     </div>
   </div>
@@ -2724,7 +2757,8 @@ var qrcode = function() {
 const CONFIG = {
   titre: "Le Ticket<br>gagnant",
   sousTitre: "Le grand tour numérique de Lille",
-  ressourceURL: "https://dane.site.ac-lille.fr",   // lien du QR code final
+  ressourceURL: "https://dane.site.ac-lille.fr",
+  urlJeu: "",                // adresse publique du jeu (Forge) pour le QR du défi famille ; vide = adresse actuelle   // lien du QR code final
   seuilGoodie: 7500,         // défi volontairement difficile (max possible : 8 300)         // points à atteindre pour gagner un goodie
   ptsQuiSuisJe: [300, 200, 100],   // selon le nombre d'indices grattés
   ptsDifficulte: {1:100, 2:200, 3:300},
@@ -2951,6 +2985,53 @@ $("#resetBtn").addEventListener("pointerdown", e => { e.stopPropagation(); $("#a
 $("#resetBtn").addEventListener("pointerup", e => e.stopPropagation());
 document.addEventListener("click", e => { if(e.target.closest(".btn, .k, .lieu, .choix button, .ordre button, .vf button")) SON.tic(); }, true);
 
+
+/* ======================================================
+   DÉFI FAMILLE SUR TÉLÉPHONES (code partagé, sans serveur)
+   ====================================================== */
+let DEFI = null, ORDRE = null;
+function hashStr(t){ let h = 2166136261; for(const c of t){ h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rngDe(cle){ let a = hashStr(cle); return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function melanger(a, cle, r){ r = r || (DEFI && cle ? rngDe(DEFI + "|" + cle) : Math.random); a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function nouveauCode(){ const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let x = ""; for(let i=0;i<5;i++) x += c[Math.floor(Math.random()*c.length)]; return x; }
+function urlDefi(code){
+  const base = CONFIG.urlJeu || (/^https?:/.test(location.protocol) ? location.href.split("#")[0] : "");
+  return base ? base + "#defi-" + code : "";
+}
+let codeHote = null;
+function ouvrirHote(){
+  codeHote = codeHote || nouveauCode();
+  const u = urlDefi(codeHote);
+  $("#hoteCode").textContent = codeHote;
+  if(u){ try{ const q = qrcode(0,"M"); q.addData(u); q.make(); $("#hoteQr").innerHTML = `<div class="qrDefi">${q.createSvgTag({cellSize:4, margin:0, scalable:true})}</div>`; }catch(e){} }
+  else $("#hoteQr").innerHTML = `<div class="alerteDefi">⚠️ Le jeu est ouvert depuis un fichier sur cet appareil : les téléphones ne peuvent pas le rejoindre.<br>Ouvrez le jeu depuis son adresse en ligne (Forge), ou indiquez cette adresse dans <b>urlJeu</b>.</div>`;
+  show("hote");
+}
+$("#modeTel").onclick = () => { codeHote = null; ouvrirHote(); };
+$("#hoteNouveau").onclick = () => { codeHote = null; ouvrirHote(); };
+$("#hoteRetour").onclick = () => show("mode");
+$("#hoteJouer").onclick = () => { location.hash = "defi-" + codeHote; lireHash(); };
+let avDefi = null;
+function ouvrirRejoindre(){
+  $("#rejCode").textContent = DEFI; avDefi = null; $("#rejGo").disabled = true;
+  const g = $("#avatarsDefi"); g.innerHTML = "";
+  AVATARS.forEach(([e,n]) => { const b = document.createElement("button"); b.className = "av"; b.innerHTML = `<span class="e">${e}</span><span class="n">${n}</span>`;
+    b.onclick = () => { avDefi = { e, n }; g.querySelectorAll(".av").forEach(x => x.classList.remove("pris")); b.classList.add("pris"); b.dataset.num = "✓"; $("#rejGo").disabled = false; };
+    g.appendChild(b); });
+  show("rejoindre");
+}
+$("#rejGo").onclick = () => { if(!avDefi) return; SON.depart();
+  ORDRE = melanger(LIEUX.map(L => L.id), "ordre");
+  S = { equipe: avDefi.e + " " + avDefi.n, avatar: avDefi, score:0, faits:[], resultats:[], joueurs:[], tour:0, defi:true };
+  renderMap(); show("map"); };
+function lireHash(){
+  const m = /^#defi-([A-Z0-9]{4,8})$/i.exec(location.hash);
+  if(!m) return false;
+  DEFI = m[1].toUpperCase(); document.getElementById("stage").classList.add("defi");
+  ouvrirRejoindre(); return true;
+}
+addEventListener("hashchange", lireHash);
+
 /* ---------- Classement (stocké dans le navigateur du totem) ---------- */
 function lireLb(){ try{ return JSON.parse(localStorage.getItem("grandTourLille_lb") || "[]"); }catch(e){ return []; } }
 function ecrireLb(lb){ try{ localStorage.setItem("grandTourLille_lb", JSON.stringify(lb)); }catch(e){} }
@@ -2968,6 +3049,7 @@ const fmt = n => n.toLocaleString("fr-FR");
 $("#defiAcc").innerHTML = `🎯 DÉFI DU SALON<br><b>${fmt(CONFIG.seuilGoodie)} points</b><br>= un goodie imprimé pour votre équipe !<br><span style="font-size:30px;font-weight:600">Seules les meilleures équipes y arrivent…</span>`;
 (function(){ const em=["💻","📡","🚀","🔍","⚙️","🤖","🛰️","💡"]; for(let i=0;i<10;i++){ const d=document.createElement("div"); d.className="floaty"; d.textContent=em[i%em.length]; d.style.left=(5+i*9.5)+"%"; d.style.animationDelay=(-i*1.3)+"s"; $("#attract").appendChild(d);} })();
 function accueil(){
+  if(DEFI){ clearInterval(finTimer); S = null; $("#tourFlash").classList.remove("on"); ouvrirRejoindre(); return; }
   clearInterval(finTimer); S = null; MODE = "equipe"; JOUEURS = []; document.getElementById("stage").classList.remove("famille"); $("#tourFlash").classList.remove("on"); $("#impression").classList.remove("on");
   const lb = lireLb().slice(0,3);
   $("#miniLb").innerHTML = lb.length ? `<div style="justify-content:center;color:var(--or);font-weight:900">🏆 Meilleures équipes du salon</div>` + lb.map((x,i)=>`<div><span>${["🥇","🥈","🥉"][i]} ${esc(x.n)}</span><b>${x.s}</b></div>`).join("") : `<div style="justify-content:center">Soyez la première équipe du classement !</div>`;
@@ -3066,7 +3148,9 @@ function renderMap(){
     const z = ZONES[L.id], fait = S.faits.includes(L.id), d = document.createElement("div");
     d.className = "zone" + (fait ? " fait" : "");
     d.style.cssText = `left:${z[0]}%;top:${z[1]}%;width:${z[2]}%;height:${z[3]}%`;
-    d.innerHTML = fait ? '<span class="ok">✓</span>' : '<span class="badge">?</span>';
+    const verrou = S.defi && !fait && ORDRE.find(id => !S.faits.includes(id)) !== L.id;
+    if(verrou) d.classList.add("verrou");
+    d.innerHTML = fait ? '<span class="ok">✓</span>' : verrou ? '<span class="badge">🔒</span>' : '<span class="badge">?</span>';
     d.onclick = () => ouvrir(L);
     p.appendChild(d);
   });
@@ -3080,8 +3164,9 @@ function renderMap(){
     p.appendChild(d);
   });
   const reste = LIEUX.length - S.faits.length;
-  $("#mapTitre").textContent = S.faits.length ? "Étape suivante ?" : "Choisissez une étape";
-  $("#mapConsigne").innerHTML = `Encore <b>${reste} étape${reste>1?"s":""}</b> sur ${LIEUX.length}. À chaque étape : une pionnière à démasquer et 4 questions.`;
+  $("#mapTitre").textContent = S.defi ? "Touchez le lieu au badge « ? »" : S.faits.length ? "Étape suivante ?" : "Choisissez une étape";
+  $("#mapConsigne").innerHTML = S.defi && reste ? `Défi <b>${DEFI}</b> · Étape ${S.faits.length+1}/${LIEUX.length} : <b>${LIEUX.find(L => L.id === ORDRE.find(id => !S.faits.includes(id))).lieu}</b>` :
+    `Encore <b>${reste} étape${reste>1?"s":""}</b> sur ${LIEUX.length}. À chaque étape : une pionnière à démasquer et 4 questions.`;
   const pc = Math.min(100, S.score/CONFIG.seuilGoodie*100);
   $("#jauge").innerHTML = `🎯 Défi goodie : <b>${fmt(S.score)}</b> / ${fmt(CONFIG.seuilGoodie)} points<div class="barre"><i style="width:${pc}%"></i></div>`;
   majEntetes();
@@ -3145,7 +3230,7 @@ function ouvrir(L){
   });
   const autres = LIEUX.filter(x => x.id !== L.id).map(x => x.nom).concat(LEURRES);
   const c = $("#choix"); c.innerHTML = ""; c.classList.remove("lock");
-  shuffle([L.nom, ...shuffle(autres).slice(0,3)]).forEach(n => {
+  melanger([L.nom, ...melanger(autres, L.id + "-leurres").slice(0,3)], L.id + "-noms").forEach(n => {
     const b = document.createElement("button"); b.textContent = n; b.onclick = () => repondreQSJ(b, n); c.appendChild(b);
   });
   show("jeu"); majTour();
@@ -3169,7 +3254,7 @@ function repondreQSJ(btn, nom){
   }, 1100);
 }
 function cinquante(conteneur, bonneTexte){
-  const faux = shuffle([...conteneur.querySelectorAll("button")].filter(b => b.textContent !== bonneTexte)).slice(0,2);
+  const faux = melanger([...conteneur.querySelectorAll("button")].filter(b => b.textContent !== bonneTexte), "5050-" + bonneTexte).slice(0,2);
   faux.forEach(b => b.classList.add("elim")); SON.joker();
 }
 $("#cinqQSJ").onclick = () => {
@@ -3208,7 +3293,7 @@ function question(){
   const z = $("#zoneRep"); z.innerHTML = "";
   if(q.t === "qcm"){
     const c = document.createElement("div"); c.className = "choix";
-    shuffle(q.o.map((t,k) => ({t,k}))).forEach(o => {
+    melanger(q.o.map((t,k) => ({t,k})), Q.L.id + "-q" + Q.i).forEach(o => {
       const b = document.createElement("button"); b.textContent = o.t;
       b.onclick = () => { c.classList.add("lock"); const ok = o.k === q.r; b.classList.add(ok ? "bon" : "faux");
         [...c.children].forEach(x => { if(x.textContent === q.o[q.r]) x.classList.add("bon"); }); finQuestion(ok); };
@@ -3229,7 +3314,7 @@ function question(){
     z.appendChild(c);
   } else {
     const c = document.createElement("div"); c.className = "ordre"; const pris = [];
-    const melange = (() => { let m; do { m = shuffle(q.o); } while(m.join() === q.o.join()); return m; })();
+    const melange = (() => { const r = DEFI ? rngDe(DEFI + "|" + Q.L.id + "-o" + Q.i) : Math.random; let m; do { m = melanger(q.o, null, r); } while(m.join() === q.o.join()); return m; })();
     melange.forEach(t => {
       const b = document.createElement("button"); b.innerHTML = `<span class="r"></span>${t}`;
       b.onclick = () => { if(b.classList.contains("pris")) return; pris.push(t); b.classList.add("pris"); b.querySelector(".r").textContent = pris.length; if(pris.length === q.o.length) val.disabled = false; };
@@ -3293,7 +3378,7 @@ $("#btnEtape").onclick = () => { if(S.faits.length >= LIEUX.length) finPartie();
 let qrFait = false, finTimer = null;
 function finPartie(){
   if(!S) return accueil();
-  $("#finTitre").textContent = S.joueurs.length ? "Bravo, la famille !" : "Bravo, l'équipe !";
+  $("#finTitre").textContent = S.joueurs.length ? "Bravo, la famille !" : "Bravo, l'équipe !"; $("#finScoreLbl").textContent = S.joueurs.length ? "Score de la famille" : "Score de l'équipe";
   $("#finEq").textContent = "👥 " + S.equipe;
   $("#timbres").innerHTML = LIEUX.map(L => { const r = S.resultats.find(x => x.L.id === L.id);
     return `<div class="timbre${r && r.ok ? "" : " rate"}"><div class="e">${r ? emb(L) : L.ico}</div><b>${r ? L.nom : "???"}</b></div>`; }).join("");
@@ -3302,6 +3387,13 @@ function finPartie(){
   const g = $("#goodie");
   if(S.score >= CONFIG.seuilGoodie){ g.className = "goodie oui"; g.innerHTML = "🎁 DÉFI RELEVÉ ! Montrez cet écran à l'équipe du stand<br>pour récupérer votre goodie."; }
   else { g.className = "goodie non"; g.innerHTML = `🎯 Défi goodie : il manquait ${fmt(CONFIG.seuilGoodie - S.score)} points (objectif ${fmt(CONFIG.seuilGoodie)}).<br>Bravo quand même, c'était un défi de champions !`; }
+  if(S.defi){
+    $("#finTitre").textContent = "Ta carte de score"; $("#finScoreLbl").textContent = "Ton score";
+    $("#finEq").innerHTML = `${S.avatar.e} ${esc(S.avatar.n)} · défi ${DEFI}`;
+    $("#famFin").style.display = "block";
+    $("#famFin").innerHTML = `<div class="carteScore"><span class="av">${S.avatar.e}</span>${fmt(S.score)} points<br><span style="font-size:34px;font-weight:600">Montrez votre écran à la famille :<br>le meilleur score est le champion ! 👑</span></div>`;
+    show("fin"); SON.fin(); clearInterval(finTimer); S = null; return;
+  }
   const lb = lireLb(); const moi = { n:S.equipe, s:S.score, t:Date.now() };
   lb.push(moi); lb.sort((a,b) => b.s - a.s || a.t - b.t); ecrireLb(lb.slice(0,50));
   const rang = lb.indexOf(moi) + 1;
@@ -3335,7 +3427,7 @@ $("#btnImpOk").onclick = () => $("#impression").classList.remove("on");
 let lastAct = Date.now(), idleOn = false, idleT = null;
 document.addEventListener("pointerdown", () => { lastAct = Date.now(); if(idleOn){ idleOn = false; $("#idle").classList.remove("on"); clearInterval(idleT); } }, true);
 setInterval(() => {
-  if(current === "attract" || current === "fin" || idleOn) return;
+  if(DEFI || current === "attract" || current === "fin" || idleOn) return;
   if(Date.now() - lastAct > CONFIG.inactiviteSec*1000){
     idleOn = true; let n = CONFIG.alerteSec; $("#idleN").textContent = n; $("#idle").classList.add("on");
     idleT = setInterval(() => { n--; $("#idleN").textContent = n;
@@ -3344,7 +3436,7 @@ setInterval(() => {
   }
 }, 1000);
 
-accueil();
+if(!lireHash()) accueil();
 </script>
 </body>
 </html>
